@@ -1,3 +1,11 @@
+Code for: Allegrini, A., Hannigan, L.J., Frach, L., Barkhuizen, W.,
+Baldwin, J., Andreassen, O.A., Bragantini, D., Hegemann, L., Havdahl, A. and
+Pingault, J.B., 2023. *Intergenerational transmission of polygenic
+predisposition for neuropsychiatric traits on emotional and behavioural
+difficulties in childhood.* PsyArXiv
+
+Preprint: <https://osf.io/preprints/psyarxiv/w4psd>
+
 # Files description
 
 -   `01_data_preparation.r`
