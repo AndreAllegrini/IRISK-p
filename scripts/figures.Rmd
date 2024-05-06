@@ -1,0 +1,922 @@
+---
+title: "plots"
+author: "Andrea Allegrini"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Code for figures
+
+- Only code to plot results (e.g. flowchart not included).
+
+- Summary-level data to reproduce the plots are included in `output` folder.
+
+## Figure 2
+```{r}
+
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+
+df <- readRDS("../output/summaryResultsPlots.rds")
+
+levels(df$Outcome)  <- c("P","ODD","CND","HYP","INAT","DEP","ANX")
+ 
+levels(df$PRS) <- c("PC1","Polygenic-P","ADHD","AN","ANX" ,        "AUT",
+"BIP","DEP","PTSD","SCZ","Insomnia","Neuroticism"
+, "CPAIN","Hair Colour")
+
+#subset data to those that are selected vs model 0
+#excluding PC1 for clarity
+alt <- c('ADHD','AUT', 'CPAIN','DEP', 'Neuroticism', 'Polygenic-P')
+
+right_label <- filter(df, PRS %in% alt)
+
+right_label$`direct test`[is.na(right_label$`direct test`)] <- ""
+
+right_label$`indirect test`[is.na(right_label$`indirect test`)] <- ""
+
+right_label$Alpha <- ifelse(right_label$`direct test`=="*", 1,
+                           ifelse(right_label$`indirect test`=="*", 1, .3)) #fading non significant assoc
+
+right_label$Role <- factor(right_label$Role, levels=c("Child","Mother","Father"))
+ 
+right_label$domain <-  ifelse(right_label$Outcome=="P", "General domain","Specific domains")
+
+bkp <- right_label
+
+right_label <- filter(right_label, domain == "General domain")
+
+p1 <- ggplot(data=right_label, aes(y=PRS, x=Beta, xmin=Beta-(1.96*SE), xmax=Beta+(1.96*SE),color=Role,group =Role,shape = Role))+ 
+  
+  #this adds the effect sizes to the plot
+  geom_point( position=position_dodge(width=.6),alpha=.5) + 
+  
+  #add CIs
+  geom_errorbarh(height=.1, position=position_dodge(width=.6),alpha=.5) +
+
+  geom_point( data=right_label,position=position_dodge(width=.6),alpha=right_label$Alpha, size = 3) + 
+
+  geom_errorbarh(data=right_label,height=.1, position=position_dodge(width=.6),alpha=right_label$Alpha, size = 1) +
+
+  #sets  scales
+  scale_x_continuous(limits=c(-.05,.15), breaks = seq(-.03,.12,by = .03)) +
+  #adding a vertical line at the effect = 0 mark
+  geom_vline(xintercept=0, color="black", linetype ="dashed", alpha=.5) +
+  
+  facet_grid(PRS ~ Outcome, scales= "free", space="free") +
+    geom_text(data = right_label,aes(label=`direct test`),hjust=0.5, vjust=0.5, color = 'black',
+              position=position_dodge(width=.6), show.legend = F,size = 8) +
+  
+  geom_text(data = right_label,aes(label=`indirect test`),hjust=0.5, vjust=0.5, color = 'black', 
+            position=position_dodge(width=.6), show.legend = F,size = 8) +
+  
+  xlab("Beta") + 
+  ylab("PGS") +  
+
+   labs(title = "General domain") +
+  theme(axis.text.y = element_text(face = "bold",
+                                    size=18, 
+                                    angle=0, 
+                               colour="black"),
+      
+        strip.background = element_rect(colour = "white", fill = "white"),
+         #
+  strip.text.y = element_blank(),
+         
+        panel.background = element_rect(fill = "white",
+                                colour = "white",
+                                size = 0.5, 
+                                linetype = "solid"),
+legend.position='none',
+axis.text.x = element_text(face = 'bold',
+                                   size=14,
+                                   angle = 90),
+
+        text = element_text(size = 26))
+
+right_label <- bkp 
+
+right_label <- filter(right_label, domain != "General domain")
+
+p2 <- ggplot(data=right_label, aes(y=PRS, x=Beta, xmin=Beta-(1.96*SE), xmax=Beta+(1.96*SE),color=factor(Role),group =factor(Role),shape = factor(Role)))+ 
+  
+  geom_point( position=position_dodge(width=.6),alpha=.5) + 
+  
+  geom_errorbarh(height=.1, position=position_dodge(width=.6),alpha=.5) +
+
+  geom_point( data=right_label,position=position_dodge(width=.6),alpha=right_label$Alpha, size = 3) + 
+
+  
+  geom_errorbarh(data=right_label,height=.1, position=position_dodge(width=.6),alpha=right_label$Alpha, size = 1) +
+
+  scale_x_continuous(limits=c(-.05,.15), breaks = seq(-.03,.12,by = .03)) +
+  #adding a vertical line at the effect = 0 mark
+  geom_vline(xintercept=0, color="black", linetype ="dashed", alpha=.5) +
+  
+  facet_grid(PRS ~ Outcome, scales= "free", space="free") +
+    geom_text(data = right_label,aes(label=`direct test`),hjust=0.5, vjust=0.5, color = 'black',
+              position=position_dodge(width=.6), show.legend = F,size = 8) +
+  
+  geom_text(data = right_label,aes(label=`indirect test`),hjust=0.5, vjust=0.5, color = 'black', 
+            position=position_dodge(width=.6), show.legend = F,size = 8) +
+  
+#labels
+  xlab("Beta") + 
+  ylab("") +  
+   labs(title = "Specific domains") +
+  
+  #theme
+  theme(strip.background = element_rect(colour = "white", fill = "white"),
+         strip.text.y = element_blank(),
+         
+        panel.background = element_rect(fill = "white",
+                                colour = "white",
+                                size = 0.5, 
+                                linetype = "solid"),
+        legend.title=element_blank(),
+        axis.text.x = element_text(face="bold", 
+                                   size=14,
+                                   angle = 90),
+         #erase labels of facet y
+        axis.text.y =  element_blank(),
+        axis.ticks.y = element_blank(),
+      
+        text = element_text(size = 26)) 
+  
+grid.arrange(p1, p2, nrow = 1)
+g<-arrangeGrob(p1, p2, nrow = 1, widths = c(.4,.8))
+
+ggsave(g, file=paste0("../figures/Figure_2.png"), width = 18, height=13, dpi=750)
+```
+## Figure 3 a
+
+```{r}
+
+library(ggrepel)
+library(ggplot2)
+library(dplyr)
+library(hrbrthemes)
+
+
+df <- readRDS("../output/summaryResultsPlots.rds")
+
+df <- df[df$Role=="Child",]
+
+df2 <- readRDS("../output/summaryResultsPlots_C.rds")
+
+levels(df2$Outcome)[levels(df2$Outcome)=="MFQ"] <- "DEP"
+levels(df2$PRS)[levels(df2$PRS)=="ASD"] <- "AUT"
+
+
+datf <- data.frame(df$StdBeta,df2$stdBeta,df2$Outcome,df2$PRS,df$`direct test`)
+#convert NAs to "" for plottingthe full range of PRS - otherwise PGS not selected left out 
+datf$df..direct.test.[is.na(datf$df..direct.test.)] <- ""
+
+levels(datf$df2.PRS) <- c("PC1","Polygenic-P","ADHD","AN","ANX" ,"AUT",
+"BIP","DEP","PTSD","SCZ","Insomnia","Neuroticism"
+, "CPAIN","Hair Colour")
+
+right_label <- datf[datf$df..direct.test. =="*" ,]
+
+wrong_label <- datf[datf$df..direct.test. !="*" ,]
+
+p <- ggplot(datf,aes(x=df2.stdBeta, y=df.StdBeta, color="gray")) +
+  geom_point(data=wrong_label, alpha =.3) + 
+   geom_point(data=right_label, fill = "lightblue", colour = "black", shape = 21) + 
+  geom_abline(slope = 1, intercept = 0, colour = "black", linetype =2, alpha=.5) +
+  geom_vline(xintercept=0, color="black", linetype =3, alpha=.7) +
+  geom_hline(yintercept=0, color="black", linetype =3, alpha=.7) +
+  geom_text_repel(data=wrong_label,aes(label = df2.PRS,color=df2.PRS),size = 5,alpha=.4,max.overlaps=Inf) + 
+  geom_text_repel(data=right_label,aes(label = df2.PRS,color=df2.PRS),size = 5,max.overlaps=Inf, fontface = "bold") + 
+   facet_grid( ~ df2.Outcome, scales= "fixed", space="fixed") + 
+
+    xlab("unconditional model") + 
+  ylab("conditional model" ) +
+  labs(title = "Comparison of Child PGS standardized estimates") +
+  theme_bw() +
+ theme(legend.position = "none", 
+       
+ axis.text.x = element_text(face="bold", size=16, angle = 90),
+        axis.text.y = element_text(face="bold", size=16,angle=0),
+        text = element_text(size = 24),
+ strip.background = element_blank(),
+    strip.placement = "outside")
+
+ggsave(p, file=paste0("../figures/Figure_3_a.png"), width = 20, height=7, dpi=700)
+
+```
+
+## Figure 3 b
+```{r}
+# Library
+
+library(ggplot2)
+library(dplyr)
+library(upstartr)
+
+df <- readRDS("../output/summaryResultsPlots.rds")
+
+df2 <- readRDS("../output/summaryResultsPlots_P.rds")
+
+
+df3 <- readRDS("../output/summaryResultsPlots_C.rds")
+
+df$id <- with(df,paste0(Outcome,PRS,Role))
+df2$id <- with(df2,paste0(Outcome,PRS,Role))
+df3$id <- with(df3,paste0(Outcome,PRS,Role))
+
+dfm <- rbind(df2,df3)
+
+univ <- dfm[order(dfm$id),] 
+cond <- df[order(df$id),]
+
+datf <- data.frame(univ$stdBeta,cond$StdBeta,univ$Outcome,univ$PRS, univ$Role)
+
+levels(datf$univ.Outcome)  <- c("P","ODD","CND","HYP","INAT","DEP","ANX")
+
+levels(datf$univ.PRS) <- c("PC1","Polygenic-P","ADHD","AN","ANX" ,        "AUT",
+"BIP","DEP","PTSD","SCZ","Insomnia","Neuroticism"
+, "CPAIN","Hair Colour")
+
+datf$univ.PRS <- factor(datf$univ.PRS , levels = rev(levels(datf$univ.PRS) ))
+
+#calulate percent decrese
+datf$perc_dec <-  with(datf,round((1 - (abs(cond.StdBeta) / abs(univ.stdBeta))) * sign(univ.stdBeta),2)) * 100
+
+# set to 0 ADHD vs ANX for child PGS
+datf$perc_dec <- 
+       ifelse(datf$perc_dec > 100,0,
+              datf$perc_dec)
+
+#if percent decreases below 0 than set to 100 percent decrease
+datf$perc_dec <- 
+       ifelse(datf$univ.stdBeta > 0 & datf$cond.StdBeta < 0,100,datf$perc_dec)
+
+#set to 0 when you actually have an increase 
+datf$perc_dec <- 
+       ifelse(datf$univ.PRS == "ADHD" & datf$univ.Outcome == "ANX" & (datf$univ.Role == "Child" | datf$univ.Role == "Mother") ,0,datf$perc_dec)
+
+data <- datf[datf$univ.Role!="Father",]
+
+data$univ.Role <-  factor(data$univ.Role, levels=c("Child","Mother"))
+
+
+#ad hoc function
+reorder_within2 <- function(x,
+                            by,
+                            ...,
+                            fun = mean,
+                            sep = "___") {
+  new_x <- paste(x, ..., sep = sep)
+  stats::reorder(new_x, by, FUN = fun)
+}
+
+#subset data to those that are selected vs model 0 / no PC1 for clarity
+alt <- c('ADHD','AUT', 'CPAIN','DEP', 'Neuroticism', 'Polygenic-P')
+data <- filter(data, univ.PRS %in% alt)
+data <- filter(data, univ.Role %in% "Child")
+
+p <- ggplot(data) +
+  (aes(reorder_within2(univ.PRS, perc_dec, univ.Outcome))) + 
+
+  #segments 
+  geom_segment( aes(x=reorder_within2(univ.PRS, perc_dec,univ.Outcome), xend=reorder_within2(univ.PRS, perc_dec,univ.Outcome), y=univ.stdBeta , yend=cond.StdBeta
+                    #, color="black"
+                    , alpha = 1)) +
+  
+  #geom point univariate 
+    geom_point( aes(x=reorder_within2(univ.PRS, perc_dec,univ.Outcome), y=univ.stdBeta), color=rgb(0.2,0.7,0.1,0.5), size=3) +
+  
+  geom_point( aes(x=reorder_within2(univ.PRS, perc_dec,univ.Outcome), y=cond.StdBeta), color=rgb(0.7,0.2,0.1,0.5), size=3) +
+  
+  geom_text(data = data,aes(label=paste0(perc_dec,"%"), x = reorder_within2(univ.PRS, perc_dec, univ.Outcome), y = univ.stdBeta), size = 4, fontface = "bold",  position = position_dodge(width = 1),hjust = -0.8) +
+  
+  facet_wrap(
+     ~ univ.Outcome,
+    dir = "h",
+    scales = "free",
+    nrow = 1
+  ) +
+             
+  coord_flip()+
+    scale_x_reordered() +
+   geom_hline(yintercept=0, color="black", linetype =3, alpha=.7) +
+  
+ # theme_ipsum() +
+ scale_y_continuous(limits=c(-.05,.20), breaks = seq(-.05,.15,by = .05)) +
+
+  theme_bw() + 
+   theme( axis.text.x = element_text(face="bold", 
+                                   size=12,
+                                   angle = 90),
+     text = element_text(size = 18),
+     legend.position = "none",
+    aspect.ratio = 1,
+    strip.background = element_blank(),
+    strip.placement = "outside"
+    ,axis.text.y = element_text(face="bold")) +
+  xlab("PGS") +
+  ylab("BETA")
+
+ggsave(p, file=paste0("../figures/Figure_3_b.png"), width = 25, height=15, dpi=750)
+
+```
+
+## Figure 4
+
+```{r}
+
+library(ggplot2)
+library(dplyr)
+
+df <- readRDS("../output/summaryResultsPlots.rds")
+
+levels(df$Outcome)  <- c("P","ODD","CND","HYP","INAT","DEP","ANX")
+ 
+levels(df$PRS) <- c("PC1","Polygenic-P","ADHD","AN","ANX" ,        "AUT",
+"BIP","DEP","PTSD","SCZ","Insomnia","Neuroticism"
+, "CPAIN","Hair Colour")
+
+#subset data to those that are selected vs model 0 no PC1 
+alt <- c('ADHD','AUT', 'CPAIN','DEP', 'Neuroticism','Polygenic-P')
+
+right_label <- filter(df, PRS %in% alt)
+
+right_label$`direct test`[is.na(right_label$`direct test`)] <- ""
+right_label$`indirect test`[is.na(right_label$`indirect test`)] <- ""
+
+right_label$Alpha <- ifelse(right_label$`direct test`=="*", 1,
+                           ifelse(right_label$`indirect test`=="*", 1, .3))
+ 
+right_label$Role <- factor(right_label$Role, levels=c("Child","Mother","Father"))
+
+p <- ggplot(data=right_label, aes(y=PRS, x=Beta, xmin=Beta-(1.96*SE), xmax=Beta+(1.96*SE),color=Role,group =Role, shape = Role))+ 
+  
+  #this adds the effect sizes to the plot
+  geom_point(position=position_dodge(width=.6),alpha=.5) + 
+  #adds the CIs
+  geom_errorbarh(height=.1, position=position_dodge(width=.6),alpha=.5) +
+
+  geom_point(data=right_label,position=position_dodge(width=.6),alpha=right_label$Alpha, size = 4) + 
+  
+  geom_errorbarh(data=right_label,height=.1, position=position_dodge(width=.6),alpha=right_label$Alpha, size = 1) +
+
+	geom_rect(data = subset(df, PRS %in% c("CPAIN" ) & Outcome %in% c("ODD")), fill = NA,colour = "black", xmin = -Inf,xmax = Inf,ymin = -Inf,ymax = Inf, size=1.8,   linetype = "dashed") +
+  
+   geom_rect(data = subset(df, PRS %in% c("ADHD") & Outcome %in% c("ODD","HYP","ANX")), fill = NA, colour = "black", xmin = -Inf,xmax = Inf, ymin = -Inf,ymax = Inf,  size=1.8,   linetype = "dashed") +
+  
+   geom_rect(data = subset(df, PRS %in% c("Polygenic-P","DEP","AUT") & Outcome %in% c("P" )), 
+                          fill = NA, colour = "#009E73", xmin = -Inf,xmax =Inf,ymin = -Inf,ymax = Inf, size=1.8,   linetype = 1) +
+  
+  
+      geom_rect(data = subset(df, PRS %in% c( "Neuroticism") & Outcome %in% c("HYP","ODD","DEP","ANX","INAT","CND")), fill = NA, colour = "#EF8A62", xmin = -Inf,xmax = Inf,ymin = -Inf,ymax = Inf, size=1.8, linetype = 1) +
+  
+     geom_rect(data = subset(df, PRS %in% c("CPAIN" ) & Outcome %in% c("CND","HYP","INAT","DEP","ANX")), fill = NA,colour = "#EF8A62", xmin = -Inf,xmax = Inf,ymin = -Inf,ymax = Inf, size=1.8,  linetype = 1) +
+  
+   geom_rect(data = subset(df, PRS %in% c("ADHD") & Outcome %in% c("DEP","INAT","CND")), fill = NA, colour = "#EF8A62", xmin = -Inf,xmax = Inf,ymin = -Inf,ymax = Inf, size=1.8,   linetype = 1) +
+  
+  scale_x_continuous(limits=c(-.05,.15), breaks = seq(-.03,.12,by = .03)) +
+  #adding a vertical line at 0 
+  geom_vline(xintercept=0, color="black", linetype ="dashed", alpha=.5) +
+  
+  facet_grid(PRS ~ Outcome, scales= "free", space="free") +
+    geom_text(data = right_label,aes(label=`direct test`),hjust=0.5, vjust=0.5, color = 'black',
+              position=position_dodge(width=.6), show.legend = F,size = 8) +
+  
+  geom_text(data = right_label,aes(label=`indirect test`),hjust=0.5, vjust=0.5, color = 'black', 
+            position=position_dodge(width=.6), show.legend = F,size = 8) +
+  
+  	geom_rect(data = subset(df, PRS %in% c("Polygenic-P", "DEP", "AUT" ) & Outcome %in% c("ODD","CND","HYP","INAT", "DEP","ANX")), fill = "white",colour = NA, xmin = -Inf,xmax = Inf,ymin = -Inf,ymax = Inf, size=1.8) +  	
+  
+  geom_rect(data = subset(df, PRS %in% c("ADHD","Neuroticism","CPAIN") & Outcome %in% c("P")), fill = "white",colour = NA, xmin = -Inf,xmax = Inf,ymin = -Inf,ymax = Inf, size=1.8) +
+
+  xlab("Beta") + 
+  ylab("PGS") +  
+
+   labs(title = "Heterogeneity analyses for direct and indirect genetic effects") +
+  
+  theme( axis.text.y = element_text(face="bold", 
+                                    size=16, 
+                                    angle=0, 
+                                    colour=c("black")),
+        strip.background = element_rect(colour = "white", fill = "white"),
+         strip.text.y = element_blank(),
+         
+        panel.background = element_rect(fill = "white",
+                                colour = "white",
+                                size = 0.5, 
+                                linetype = "solid"),
+        legend.title=element_blank(),
+        axis.text.x = element_text(face="bold", 
+                                   size=14,
+                                   angle = 90),
+        text = element_text(size = 24))   
+  
+  ggsave(p, file=paste0("../figures/Figure_4.png"), width = 16, height=12, dpi=750)
+```
+
+## simulations (Figures S1, S2, S3)
+
+power plots functions
+
+```{r}
+
+ext_power_e <- function(res = NULL) {
+  power <- res %>% 
+    group_by(N, lhs, rhs, father_b, mother_b, child_b) %>%
+    summarize(power = sum(pvalue < .05)/length(pvalue))
+  return(power)
+}
+
+power_plot <- function(power = power,
+                       save = FALSE,
+                       out = NULL){
+
+  
+  plot <- power %>%
+
+    ggplot(aes(y=power,x=as.factor(round(father_b,3)),group=rhs,color=rhs)) + 
+    geom_line() +
+    geom_point() + 
+    facet_grid(.~lhs) + 
+    geom_hline(aes(yintercept=.8), linetype="dashed", color = "blue")  
+  
+  if(save){
+    ggsave(plot, file=paste0(out,"/sims_10000_",format(Sys.time(), '%d%B%Y'),".png"), width = 10, height=8, dpi=350)
+  }
+  
+  plot
+  
+}
+ 
+```
+
+## Figure S1
+```{r}
+
+resPop1 <- readRDS("../output/iter10000/popModel1/sims_secondOrder_child_09August2023.rds")
+
+print(ext_power_e(resPop1),n=63)
+
+power = ext_power_e(resPop1)
+
+power %>% filter(lhs == "pfac")
+
+out = c("../figures/")
+
+power$lhs = factor(power$lhs, levels=c("pfac","odd","cnd","hyp","inat","mfq","anx"))
+  
+  levels(power$lhs) <- c("P","ODD","CND","HYP","INAT","DEP","ANX")
+  
+p <- power_plot(power, save =F,out=nameOutDir) +  theme_bw() + theme(legend.position = "none", 
+
+ axis.text.x = element_text(face="bold", size=16, angle = 90),
+        axis.text.y = element_text(face="bold", size=16,angle=0),
+        text = element_text(size = 24),
+ strip.background = element_blank(),
+    strip.placement = "outside") + xlab("father genetic effect")
+
+
+ ggsave(p, file=paste0(out,"/POP1_sims_10000_iterations_",format(Sys.time(), '%d%B%Y'),".png"), width = 12, height=4, dpi=350)
+```
+
+
+## Figure S2
+```{r}
+
+resPop1 <- readRDS("../output/iter10000/popModel2/sims_secondOrder_child_09August2023.rds")
+
+print(ext_power_e(resPop1),n=63)
+
+power = ext_power_e(resPop1)
+
+power %>% filter(lhs == "pfac")
+
+out = c("../figures/")
+
+power$lhs = factor(power$lhs, levels=c("pfac","odd","cnd","hyp","inat","mfq","anx"))
+  
+  levels(power$lhs) <- c("P","ODD","CND","HYP","INAT","DEP","ANX")
+  
+p <- power_plot(power, save =F,out=nameOutDir) +  theme_bw() + theme(legend.position = "none", 
+
+ axis.text.x = element_text(face="bold", size=16, angle = 90),
+        axis.text.y = element_text(face="bold", size=16,angle=0),
+        text = element_text(size = 24),
+ strip.background = element_blank(),
+    strip.placement = "outside") + xlab("father genetic effect")
+
+
+ ggsave(p, file=paste0(out,"/POP2_sims_10000_iterations_",format(Sys.time(), '%d%B%Y'),".png"), width = 12, height=4, dpi=350)
+```
+
+
+
+## Figure S3
+```{r}
+
+resPop1 <- readRDS("../output/iter10000/popModel3/sims_secondOrder_child_09August2023.rds")
+
+print(ext_power_e(resPop1),n=63)
+
+power = ext_power_e(resPop1)
+
+power %>% filter(lhs == "pfac")
+
+out = c("../figures/")
+
+power$lhs = factor(power$lhs, levels=c("pfac","odd","cnd","hyp","inat","mfq","anx"))
+  
+  levels(power$lhs) <- c("P","ODD","CND","HYP","INAT","DEP","ANX")
+  
+p <- power_plot(power, save =F,out=nameOutDir) +  theme_bw() + theme(legend.position = "none", 
+
+ axis.text.x = element_text(face="bold", size=16, angle = 90),
+        axis.text.y = element_text(face="bold", size=16,angle=0),
+        text = element_text(size = 24),
+ strip.background = element_blank(),
+    strip.placement = "outside") + xlab("father genetic effect")
+
+
+ ggsave(p, file=paste0(out,"/POP3_sims_10000_iterations_",format(Sys.time(), '%d%B%Y'),".png"), width = 12, height=4, dpi=350)
+```
+
+## Figure S4
+
+```{r}
+
+library(ggplot2)
+library(dplyr)
+
+df <- readRDS("../output/summaryResultsPlots.rds")
+
+levels(df$Outcome)  <- c("P","ODD","CND","HYP","INAT","DEP","ANX")
+
+levels(df$PRS) <- c("PC1","Polygenic-P","ADHD","AN","ANX" ,"AUT",
+"BIP","DEP","PTSD","SCZ","Insomnia","Neuroticism"
+, "CPAIN","Hair Colour")
+
+right_label <- df
+
+right_label$`direct test`[is.na(right_label$`direct test`)] <- ""
+right_label$`indirect test`[is.na(right_label$`indirect test`)] <- ""
+
+right_label$Alpha <- ifelse(right_label$`direct test`=="*", 1,
+                           ifelse(right_label$`indirect test`=="*", 1, .3)) #fading non significant assoc
+
+df$Role <- factor(df$Role, levels=c("Child","Mother","Father"))
+
+p <- ggplot(data=right_label, aes(y=PRS, x=Beta, xmin=Beta-(1.96*SE), xmax=Beta+(1.96*SE),color=factor(Role),group =factor(Role),shape = factor(Role)))+ 
+  
+  #this adds the effect sizes to the plot
+  geom_point( position=position_dodge(width=.6),alpha=.5) + 
+
+  #adds the CIs
+  geom_errorbarh(height=.1, position=position_dodge(width=.6),alpha=.5) +
+
+  geom_point( data=right_label,position=position_dodge(width=.6),alpha=right_label$Alpha, size = 3) + 
+  
+  geom_errorbarh(data=right_label,height=.1, position=position_dodge(width=.6),alpha=right_label$Alpha, size = 1) +
+
+  scale_x_continuous(limits=c(-.05,.15), breaks = seq(-.03,.12,by = .03)) +
+  #adding a vertical line at 0 
+  geom_vline(xintercept=0, color="black", linetype ="dashed", alpha=.5) +
+  
+  facet_grid(PRS ~ Outcome, scales= "free", space="free") +
+  
+    geom_text(data = right_label,aes(label=`direct test`),hjust=0.5, vjust=0.5, color = 'black',
+              position=position_dodge(width=.6), show.legend = F,size = 8) +
+  
+  geom_text(data = right_label,aes(label=`indirect test`),hjust=0.5, vjust=0.5, color = 'black', 
+            position=position_dodge(width=.6), show.legend = F,size = 8) +
+    xlab("Beta") + 
+  ylab("PGS") +  
+
+   labs(title = "Parent-offspring PGS effects over general and specific domains") +
+  
+  theme( axis.text.y = element_text(#face="bold", 
+                                    size=14, 
+                                    angle=0, 
+                                    colour=c("black")),
+        strip.background = element_rect(colour = "white", fill = "white"),
+         strip.text.y = element_blank(),
+         
+        panel.background = element_rect(fill = "white",
+                                colour = "white",
+                                size = 0.5, 
+                                linetype = "solid"),
+ 
+        legend.title=element_blank(),
+        axis.text.x = element_text(face="bold", 
+                                   size=12,
+                                   angle = 90),
+ 
+        text = element_text(size = 22)) 
+  
+ggsave(p, file=paste0("../figures/Figure_S4.png"), width = 16, height=12, dpi=750)
+
+```
+
+## Figure S5
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(ggrepel)
+
+df <- readRDS("../output/summaryResultsPlots.rds")
+
+df <- df[df$Role!="Child",]
+
+df2 <- readRDS("../output/summaryResultsPlots_P.rds")
+
+df2 <- df2[df2$Role!="Child",]
+
+levels(df2$Outcome)[levels(df2$Outcome)=="MFQ"] <- "DEP"
+levels(df2$PRS)[levels(df2$PRS)=="ASD"] <- "AUT"
+
+datf <- data.frame(df$StdBeta,df2$stdBeta,df2$Outcome,df2$PRS, df2$Role,df$BH,df$`indirect test`)
+
+datf$df..indirect.test.[is.na(datf$df..indirect.test.)] <- ""
+
+levels(datf$df2.PRS) <- c("PC1","Polygenic-P","ADHD","AN","ANX" ,"AUT",
+"BIP","DEP","PTSD","SCZ","Insomnia","Neuroticism"
+, "CPAIN","Hair Colour")
+
+right_label <- datf[datf$df..indirect.test. =="*" ,]
+
+wrong_label <- datf[datf$df..indirect.test. !="*" ,]
+
+datf$df2.Role = factor(datf$df2.Role, levels=c("Father","Mother"))
+
+
+p <- ggplot(datf,aes(x=df2.stdBeta, y=df.StdBeta, color="gray")) +
+  geom_point(data=wrong_label, alpha =.3) + 
+   geom_point(data=right_label,fill = "lightblue", colour = "black", shape = 21) + 
+  geom_abline(slope = 1, intercept = 0, colour = "black", linetype =2, alpha=.5) +
+  geom_vline(xintercept=0, color="black", linetype =3, alpha=.7) +
+  geom_hline(yintercept=0, color="black", linetype =3, alpha=.7) +
+  
+  
+  geom_text_repel(data=wrong_label,aes(label = df2.PRS,color=df2.PRS),size = 5,alpha=.4
+                 # ,max.overlaps=Inf
+                  ) + 
+  geom_text_repel(data=right_label,aes(label = df2.PRS,color=df2.PRS),size = 5,
+                #  ,max.overlaps=Inf, 
+                  fontface = "bold") +
+   facet_grid(df2.Role ~ df2.Outcome, scales= "fixed", space="fixed") + 
+  
+   xlab("unconditional model") + 
+  ylab("conditional model" ) +
+  labs(title = "Comparison of PGS standardized estimates") +
+  theme_bw() +
+ theme(legend.position = "none", 
+       
+ axis.text.x = element_text(face="bold", size=16, angle = 90),
+        axis.text.y = element_text(face="bold", size=16,angle=0),
+        text = element_text(size = 24),
+ strip.background = element_blank(),
+    strip.placement = "outside")
+
+ggsave(p, file=paste0("../figures/Figure_S5.png"), width = 20, height=12, dpi=700)
+
+```
+
+## Figure S6 
+
+```{r}
+
+library(ggplot2)
+library(dplyr)
+library(ggrepel)
+
+#fit <- readRDS("../output/r_ADHD_Demontis_ieua1183_auto_Spec_d_HIER.rds")
+
+#parameterestimates(fit) %>% filter(op == "=~") 
+
+#lambda <- parameterestimates(fit) %>% filter(op == "=~", lhs =="odd")
+#beta <- parameterestimates(fit) %>% filter(op == "~", rhs =="r_ADHD_Demontis_ieua1183_auto_Child")
+
+
+#datf <- data.frame(beta=beta$est[6:13],se=beta$se[6:13],lambda=lambda$est,item=lambda$rhs)
+
+#saveRDS(datf,"../output/ADHD_ODD_items.rds")
+
+datf <- readRDS("../output/ADHD_ODD_items.rds")
+
+(fitall <-  summary(lm(beta ~ 0 + lambda, datf)))
+
+
+
+p <- ggplot(datf, aes(x=lambda, y=beta, color="gray")) +
+  geom_point() + 
+   geom_errorbar(aes(ymin = beta-se, ymax = beta+se)) + 
+   geom_abline(slope = coef(fitall)[[1]], 
+              colour = "red", linetype =2, alpha=.5) + 
+  geom_text_repel(aes(label = item,color=item),size = 4) + 
+  #  scale_x_continuous(limits=c(.7,1.3)
+                       #, breaks = seq(-.10,.25,by = .05)
+                 #      ) +
+    
+  xlab("lambda") + 
+  ylab("beta" ) +
+  labs(title = "ADHD PGS effects on ODD items") +
+ theme(legend.position = "none", 
+ axis.text.x = element_text(face="bold", size=12, angle = 90),
+        axis.text.y = element_text(face="bold", size=12,angle=0),
+        text = element_text(size = 22))
+
+
+ggsave(p, file=paste0("../figures/Figure_S6.png"), width = 8, height=6, dpi=350)
+
+```
+
+## Figure S7
+```{r}
+library(ggplot2)
+library(dplyr)
+library(ggrepel)
+
+#fit <- readRDS("../output/r_ChronicPain_Johnston_2019_auto_Spec_d_HIER.rds")
+
+#parameterestimates(fit) %>% filter(op == "=~") 
+
+#lambda <- parameterestimates(fit) %>% filter(op == "=~", lhs =="odd")
+#beta <- parameterestimates(fit) %>% filter(op == "~", rhs =="r_ChronicPain_Johnston_2019_auto_Child")
+
+
+#datf <- data.frame(beta=beta$est[6:13],se=beta$se[6:13],lambda=lambda$est,item=lambda$rhs)
+
+#saveRDS(datf,"../output/CPAIN_ODD_items.rds")
+
+datf <- readRDS("../output/CPAIN_ODD_items.rds")
+
+(fitall <-  summary(lm(beta ~ 0 + lambda, datf)))
+
+p <- ggplot(datf, aes(x=lambda, y=beta, color="gray")) +
+  geom_point() + 
+   geom_errorbar(aes(ymin = beta-se, ymax = beta+se)) + 
+   geom_abline(slope = coef(fitall)[[1]], 
+              intercept = 0, colour = "black", linetype =2, alpha=.5) + 
+   #geom_abline(slope = coef(fitodd142)[[1]], 
+    #          intercept = 0, colour = "red", linetype =2, alpha=.5) + 
+  geom_text_repel(aes(label = item,color=item),size = 4) + 
+    xlab("lambda") + 
+  ylab("beta" ) +
+  labs(title = "Chronic pain PGS effects on ODD items") +
+ theme(legend.position = "none", 
+ axis.text.x = element_text(face="bold", size=12, angle = 90), axis.text.y = element_text(face="bold", size=12,angle=0),
+        text = element_text(size = 22))
+
+ggsave(p, file=paste0("../figures/Figure_S7.png"), width = 8, height=6, dpi=350)
+
+```
+
+## Figure S8
+```{r}
+
+library(ggplot2)
+library(dplyr)
+library(ggrepel)
+
+#fit <- readRDS("../output/r_ADHD_Demontis_ieua1183_auto_Spec_e_HIER.rds")
+
+#parameterestimates(fit) %>% filter(op == "=~") 
+
+#lambda <- parameterestimates(fit) %>% filter(op == "=~", lhs =="hyp")
+#beta <- parameterestimates(fit) %>% filter(op == "~", rhs =="r_ADHD_Demontis_ieua1183_auto_Child")
+
+#datf <- data.frame(beta=beta$est[6:14],se=beta$se[6:14],lambda=lambda$est,item=lambda$rhs)
+
+#saveRDS(datf,"../output/ADHD_hyperactivity_items.rds")
+
+datf <- readRDS("../output/ADHD_hyperactivity_items.rds")
+
+(fitall <-  summary(lm(beta ~ 0 + lambda, datf)))
+
+require("ggrepel")
+
+p <- ggplot(datf, aes(x=lambda, y=beta, color="gray")) +
+  geom_point() + 
+   geom_errorbar(aes(ymin = beta-se, ymax = beta+se)) + 
+   geom_abline(slope = coef(fitall)[[1]], 
+              intercept = 0, colour = "black", linetype =2, alpha=.5) + 
+  geom_text_repel(aes(label = item,color=item),size = 4) + 
+    xlab("lambda") + 
+  ylab("beta" ) +
+  labs(title = "ADHD PGS effects on HYP items") +
+ theme(legend.position = "none", 
+ axis.text.x = element_text(face="bold", size=12, angle = 90),
+        axis.text.y = element_text(face="bold", size=12,angle=0),
+        text = element_text(size = 22))
+
+ggsave(p, file=paste0("../figures/Figure_S8.png"), width = 8, height=6, dpi=750)
+
+```
+
+## Figure S9
+
+```{r}
+
+library(ggplot2)
+library(dplyr)
+library(ggrepel)
+
+#fit <- readRDS("../output/r_neuroSum_Nagel2018_auto_Spec_HIER.rds")
+
+#parameterestimates(fit) %>% filter(op == "=~") 
+
+#lambda <- parameterestimates(fit) %>% filter(op == "=~")
+#beta <- parameterestimates(fit) %>% filter(op == "~", rhs =="r_neuroSum_Nagel2018_auto_Child" |  rhs =="r_neuroSum_Nagel2018_auto_Mother" |  rhs =="r_neuroSum_Nagel2018_auto_Father")
+
+#beta$role <- rep(c("child","mother","father"),length(beta$est)/3)
+
+#beta <- beta[order(beta$role),]
+
+#datf <- data.frame(role =beta$role,beta=beta$est,se=beta$se,lambda=lambda$est[53:58],item=lambda$rhs[53:58])
+
+#saveRDS(datf,"../output/Neuroticism_specific_domains.rds")
+
+datf <- readRDS("../output/Neuroticism_specific_domains.rds")
+
+slopEst <- data.frame(beta=rbind(coef(summary(lm(beta ~ 0 + lambda, datf[datf$role == "child",])))[[1]],
+                                 
+ coef(summary(lm(beta ~ 0 + lambda, datf[datf$role == "mother",])))[[1]],
+coef(summary(lm(beta ~ 0 + lambda, datf[datf$role == "father",])))[[1]]),
+
+role =c("child","mother","father"))
+
+p <- ggplot(datf, aes(x=lambda, y=beta, color="gray")) +
+  geom_point() + 
+   geom_errorbar(aes(ymin = beta-se, ymax = beta+se)) + 
+   facet_grid(role ~ . , scales= "fixed", space="fixed") +
+   geom_abline(data=slopEst,aes(slope=beta, 
+              intercept = 0), colour = "black", linetype =2, alpha=.5) + 
+  geom_text_repel(aes(label = item,color=item),size = 4) + 
+    xlab("lambda") + 
+  ylab("beta" ) +
+  labs(title = "Neuroticism PGS effects on specific domains") +
+ theme(legend.position = "none", 
+ axis.text.x = element_text(face="bold", size=12, angle = 90),
+        axis.text.y = element_text(face="bold", size=12,angle=0),
+        text = element_text(size = 22))
+
+
+ggsave(p, file=paste0("../figures/Figure_S9.png"), width = 8, height=8, dpi=750)
+
+```
+
+
+## Figure S11
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(ggrepel)
+
+#fit <- readRDS("../output/PSYCH_LdAuto_Spec_HIER.rds")
+
+#parameterestimates(fit) %>% filter(op == "=~") 
+
+#lambda <- parameterestimates(fit) %>% filter(op == "=~")
+#beta <- parameterestimates(fit) %>% filter(op == "~", rhs =="PSYCH_LdAuto_Child" |  rhs =="PSYCH_LdAuto_Mother" |  rhs =="PSYCH_LdAuto_Father")
+
+#beta$role <- rep(c("child","mother","father"),length(beta$est)/3)
+
+#beta <- beta[order(beta$role),]
+
+#datf <- data.frame(role =beta$role,beta=beta$est,se=beta$se,lambda=lambda$est[53:58],item=lambda$rhs[53:58])
+
+#saveRDS(datf,"../output/PC1_Specific_Domains.rds")
+
+datf <- readRDS("../output/PC1_Specific_Domains.rds")
+
+slopEst <- data.frame(beta=rbind(coef(summary(lm(beta ~ 0 + lambda, datf[datf$role == "child",])))[[1]],
+ coef(summary(lm(beta ~ 0 + lambda, datf[datf$role == "mother",])))[[1]],
+coef(summary(lm(beta ~ 0 + lambda, datf[datf$role == "father",])))[[1]]),
+
+
+role =c("child","mother","father"))
+
+p <- ggplot(datf, aes(x=lambda, y=beta, color="gray")) +
+  geom_point() + 
+   geom_errorbar(aes(ymin = beta-se, ymax = beta+se)) + 
+   facet_grid(role ~ . , scales= "fixed", space="fixed") +
+   geom_abline(data=slopEst,aes(slope=beta, 
+              intercept = 0), colour = "black", linetype =2, alpha=.5) + 
+  geom_text_repel(aes(label = item,color=item),size = 4) + 
+    xlab("lambda") + 
+  ylab("beta" ) +
+  labs(title = "PC1 PGS effects on specific domains") +
+ theme(legend.position = "none", 
+ axis.text.x = element_text(face="bold", size=12, angle = 90),
+        axis.text.y = element_text(face="bold", size=12,angle=0),
+        text = element_text(size = 22))
+
+ggsave(p, file=paste0("../figures/Figure_S11.png"),  width = 8, height=8, dpi=750)
+
+```

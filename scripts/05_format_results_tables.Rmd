@@ -1,0 +1,686 @@
+---
+title: "format_tables"
+author: "Andrea Allegrini"
+output: html_document
+---
+
+# Description
+
+This Markdown document serves to organize results and summary-level data from the data preparation and analysis stages (steps 01_* to 03_*). Formats results and generates supplementary tables in Excel.
+
+The following tables were added manually:
+Table 10 - shrikage
+Table 11 - internal consistency
+Table 14 - GWAS summary statistics 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(dplyr)
+library(openxlsx)
+library(lavaan)
+
+wn <- "tables_feb3"  #workbook name
+
+```
+
+# rename items
+
+```{r}
+
+
+mfqn <- c("Felt miserable or unhappy", "Felt so tired that s/he just sat around and did nothing", "Was very restless", "Didn’t enjoy anything at all", "Felt s/he was no good anymore", "Cried a lot", "Hated him/herself", "Thought s/he could never be as good as other kids","Felt lonely","Thought nobody really loved him/her",
+"Felt s/he was a bad person","Felt s/he did everything wrong","Found it hard to think/concentrate")
+
+
+anxn <- c("My child gets really frightened for no reason at all","My child is afraid to be alone in the house","People tell my child that he/she worries too much"," My child is scared to go to school","My child is shy")
+  
+  
+condn <- c("Bullies, threatens or intimidates others","Initiates physical fights"," Has been physically cruel to others","Has harassed or injured animals physically","Has stolen items of nontrivial value without confronting a victim (e.g. shoplifting)","Has deliberately destroyed other’s property","Has been truant from school","Has used an object that can cause serious physical harm to others (e.g. a bat, stone, knife, heavy toy)") 
+
+hypern <- c("Fidgets with hands or feet or squirms in seat (sits uneasily)","Leaves seat in classroom or in other situations in which remaining seated is expected (e.g. at the table or in group gathering)","Runs about or climbs excessively in situations in which it is inappropriate","Has difficulty playing or engaging in leisure activities quietly","Is “on the go” or acts as if “driven by a motor”"," Talks excessively","Blurts out answers before questions have been completed", "Has difficulty awaiting turn","Interrupts or intrudes on others, such as in conversation or play")
+
+inatn <- c("Fails to give close attention to details or makes careless mistakes in schoolwork","Has difficulty sustaining attention in tasks or play activities","Does not seem to listen when spoken to directly","Does not follow through on instructions and fails to finish school work, chores or duties (not due to oppositional behaviour or failure to understand instructions)","Has difficulty organizing tasks and activities","Avoids, dislikes or is reluctant to engage in tasks that require sustained mental effort (such as schoolwork or homework)","Loses things necessary for tasks or activities (pencils, books, toys)", "Is easily distracted","Is forgetful in daily activities")
+
+
+oddn <- c("Loses temper (tantrums)","Argues with adults","Actively defies or refuses to comply with adults’ requests or rules", "Deliberately annoys people","Blames others for his/her mistakes or misbehaviour","Is touchy or easily annoyed by others","Is angry and resentful","Is spiteful or vindictive")
+
+```
+
+
+# items frequencies
+
+```{r}
+sn <- "Item_frequencies" #sheet name
+
+load("../data/dat8y_pfitems01February2023.RData")
+
+dat <- readRDS("../data/200k_phenoPlusPRS_cleanedTrios_01February2023_unrel_pca.rds")
+
+
+#Hmisc::describe(dat) 
+
+tbl1 <- sapply(dat[,c(cnd)],table)
+
+#fill in the missing column 
+tbl1$cnd115[4] <- NA 
+names(tbl1$cnd115)[4] <- 3 
+
+tbl1 <- data.frame(t(sapply(tbl1,c)))
+
+tbl2 <- data.frame(t(sapply(dat[,c(odd,hyp,inat)],table)))
+
+tbl3 <- data.frame(t(sapply(dat[,c(anx,mfq)],table)))
+
+names(tbl3) <- c("not true", "sometimes true", "true")
+
+itms <- dplyr::bind_rows(tbl1,tbl2)
+
+names(itms) <- c("never/rarely", "sometimes", "often", "very often")
+
+itms$`item name` <- c(condn,oddn,hypern,inatn)
+tbl3$`item name` <- c(anxn,mfqn)
+
+itms <- itms[,c("item name","never/rarely", "sometimes", "often", "very often")]
+tbl3 <- tbl3[,c("item name","not true", "sometimes true", "true")]
+
+
+#initiate workbook
+wb<-createWorkbook()
+
+#add worksheet
+addWorksheet(wb,sheetName = paste0(sn))
+
+
+hs1 <- createStyle(fgFill = "#4F81BD", halign = "CENTER", textDecoration = "Bold",
+    border = "Bottom", fontColour = "black")
+
+writeData(wb, sheet = paste0(sn), x = paste("Table 1") , startRow = 1, rowNames=T)
+
+writeDataTable(wb, sheet = paste0(sn), x = itms, startRow = 2, rowNames=T, headerStyle = hs1)
+writeDataTable(wb, sheet = paste0(sn), x = tbl3, startRow = 38, rowNames=T, headerStyle = hs1)
+               
+saveWorkbook(wb,paste0('../output/tables/',wn,'.xlsx'), overwrite=T)
+
+#openXL(paste0('../output/tables/',wn,'.xlsx'))
+```
+
+
+
+# tables base models 
+
+```{r}
+library(lavaan)
+
+sn <- "Base_models" #sheet name
+
+so <- readRDS('../output/BASE_models/baseModel_secondOrder.rds')
+bf <- readRDS('../output/BASE_models/baseModel_bifactor.rds')
+
+
+#model comparison
+chist <- anova(bf,so)
+
+chist <- as.data.frame(chist)
+
+rownames(chist) <- c("bifactor","second-order")
+
+#model fit 
+
+modelFit1 <- c(fitMeasures(so)[["chisq"]],fitMeasures(so)["df"],fitMeasures(so)["pvalue"],fitMeasures(so)["rmsea"], fitMeasures(so)["srmr"], fitMeasures(so)["cfi"])
+
+modelFit2 <- c(fitMeasures(bf)[["chisq"]],fitMeasures(bf)["df"],fitMeasures(bf)["pvalue"],fitMeasures(bf)["rmsea"], fitMeasures(bf)["srmr"], fitMeasures(bf)["cfi"])
+
+
+modelFit <- data.frame(rbind(modelFit1,modelFit2))
+
+names(modelFit) <- c("chisq","df","chisqPval","rmsea","srmr","cfi")
+
+round(modelFit,4)
+ 
+rownames(modelFit) <- c("second-order","bifactor")
+
+
+addWorksheet(wb,sheetName = paste0(sn))
+
+writeData(wb, sheet = paste0(sn), x = paste("Table 2a") , startRow = 1, rowNames=T)
+
+writeDataTable(wb, sheet = paste0(sn), x = modelFit, rowNames=T,startRow =2, headerStyle = hs1)
+
+writeData(wb, sheet = paste0(sn), x = paste("Table 2b") , startRow = 6, rowNames=T)
+
+writeDataTable(wb, sheet = paste0(sn), x = chist[-c(2:3)], rowNames=T, startRow =7, headerStyle = hs1)
+               
+saveWorkbook(wb,paste0('../output/tables/',wn,'.xlsx'), overwrite=T)
+
+#openXL('../output/tables/tblRes.xlsx')
+
+```
+
+```{r}
+
+sn <- "Base_models_estimates" #sheet name
+#summary(so, standardized = T, rsq=T)
+
+PEso <- parameterEstimates(so, standardized = T)
+
+PEso %>% print(n = Inf)
+
+PEsos <- PEso %>% #extract standardized factor loadings 
+    filter(op =="=~")  %>% 
+    select(lhs,rhs,est,se,std.all)
+
+PEsos$std.all <- round(PEsos$std.all,3)
+PEsos$est <- round(PEsos$est,3)
+
+
+PEsov <- PEso %>% #extract variances 
+    filter(op =="~~")  %>% 
+    select(lhs,est)
+
+PEsov$est <- round(PEsov$est,3)
+
+PEbf <- parameterEstimates(bf, standardized = T)
+
+PEbf %>% print(n = Inf)
+
+PEbfs <- PEbf %>% #extract un/standardized factor loadings 
+    filter(op =="=~")  %>% 
+    select(lhs,rhs,est,se,std.all)
+
+PEbfs$std.all <- round(PEbfs$std.all,3)
+PEbfs$est <- round(PEbfs$est,3)
+
+PEbfv <- PEbf %>% #extract variances 
+    filter(op =="~~")  %>% 
+    select(lhs,est,se)
+
+#take out between factors covariances (set to 0)
+
+PEbfv <- PEbfv[-c(1:21),]
+
+PEbfv$est <- round(PEbfv$est,3)
+
+
+addWorksheet(wb,sheetName = paste0(sn))
+
+writeData(wb, sheet = paste0(sn), x = paste("Table 3a. Standardized laodings - second-order model") , startRow = 1, rowNames=T)
+writeDataTable(wb, sheet = paste0(sn), x = PEsos, colNames =F,rowNames=F,startRow =2, headerStyle = hs1)
+
+writeData(wb, sheet = paste0(sn), x = paste("Table 3b. (Residual) variances - second-order model") , startRow = 1,startCol =7, rowNames=T)
+writeDataTable(wb, sheet = paste0(sn), x = PEsov,colNames =F, rowNames=F, startRow =2,startCol =5, headerStyle = hs1)
+
+writeData(wb, sheet = paste0(sn), x =  paste("Table 3a. Standardized laodings - bifactor model"), startRow = 1,startCol =10, rowNames=T)
+writeDataTable(wb, sheet = paste0(sn), x = PEbfs, colNames =F,rowNames=F,startRow =2,startCol =9, headerStyle = hs1)
+
+writeData(wb, sheet = paste0(sn), x = paste("Table 3d. (Residual) variances - bifactor model") , startRow = 1,startCol =16, rowNames=T)
+writeDataTable(wb, sheet = paste0(sn), x = PEbfv, rowNames=F, colNames =F,startRow =2,startCol =13, headerStyle = hs1)
+               
+saveWorkbook(wb,paste0('../output/tables/',wn,'.xlsx'), overwrite=T)
+
+```
+
+
+# nested comparisons trio
+```{r}
+
+sn <- "Model_comparisons" #sheet name
+
+df <- readRDS("../output/compare_fit_trio_02February2023.rds")
+
+names(df) <- c('PC1','PC1 psych','ADHD', 'AN', 'ANX', 'ASD', 'BIP','CPAIN', 'DEP', 'Insomnia',  'Neuroticism', 'PTSD', 'SCZ','Hair Colour')
+
+#count 1 blank line + 1 for title + 5 for table
+
+total_lines <- (1 + 1 + 5) * length(names(df)) 
+
+seqlines <- seq(from = 3, to = total_lines + 2, by = 7)#tables positions counting titles and empty lines
+
+addWorksheet(wb,sheetName =paste0(sn))
+
+writeData(wb, sheet = paste0(sn), x = paste("Table 4. Model comparisons") , startRow = 1, rowNames=T)
+
+for (PRS in names(df)) {
+  
+ post <- seqlines[which(names(df)==paste0(PRS))]#position of table in excel
+
+ testRES <- as.data.frame(df[[paste0(PRS)]])[1:4,-c(2:3)]
+ 
+testRES$adj <- ifelse(testRES$`Pr(>Chisq)`<(.05/3), "*", "") # adjustment for number of comparisons = 3 (null vs general vs specific models)
+ 
+ writeData(wb, sheet = paste0(sn), x = paste0(PRS) , startRow = post-1, rowNames=T)
+ 
+ writeDataTable(wb, sheet = paste0(sn), x = testRES, colNames =T,rowNames=T,startRow = post, headerStyle = hs1)
+
+}
+
+saveWorkbook(wb,paste0('../output/tables/',wn,'.xlsx'), overwrite=T)
+
+```
+
+# nested comparisons specific trio
+
+```{r}
+
+sn <- "Model_comparisons_spec" #sheet name
+
+df <- readRDS("../output/compare_fit_het_trio_02February2023.rds")
+
+names(df) <- c('PC1','PC1 psych','ADHD', 'AN', 'ANX', 'ASD', 'BIP','CPAIN', 'DEP', 'Insomnia',  'Neuroticism', 'PTSD', 'SCZ','Hair Colour')
+
+#count 1 blank line + 1 for title + 13 for table
+
+total_lines <- (1 + 1 + 13) * length(names(df)) 
+
+seqlines <- seq(from = 3, to = total_lines + 2, by = 15)#tables positions counting titles and empty lines
+
+addWorksheet(wb,sheetName = paste0(sn))
+
+writeData(wb, sheet = paste0(sn), x = paste("Table 5. Model comparisons - first order") , startRow = 1, rowNames=T)
+
+for (PRS in names(df)) {
+  
+ post <- seqlines[which(names(df)==paste0(PRS))]#position of table in excel
+
+ testRES <- as.data.frame(df[[paste0(PRS)]])[,-c(2:3)]
+ 
+# rownames(testRES)[c(2,4,6,8,10,12)] <- "fitS" #same name across comparisons for S model
+ 
+ testRES$adj <- ifelse(testRES$`Pr(>Chisq)`<(.05/8), "*", "") # adjustment for n comparisons = 8 (general vs specific + 6 het factors ) 
+ 
+ writeData(wb, sheet = paste0(sn), x = paste0(PRS) , startRow = post-1, rowNames=T)
+ 
+ writeDataTable(wb, sheet = paste0(sn), x = testRES, colNames =T,rowNames=T,startRow = post, headerStyle = hs1)
+
+}
+
+saveWorkbook(wb,paste0('../output/tables/',wn,'.xlsx'), overwrite=T)
+
+
+```
+
+# results by PGS trio
+
+```{r}
+
+df <- readRDS('../output/listRes_trio_02February2023.rds')
+
+df$type <- rep(c('Child','Mother','Father'), nrow(df)/3)
+
+df$PRS <- gsub('r_UKB_|r_|_Child|_Mother|_Father','',df$rhs)
+
+df$PRS <- gsub('_ukbd1747_2_|_ieub102|_ieua1185|_ukbd1747_2|_ukbb5192|_ieua1183','',df$PRS)
+
+df <- dplyr::filter(df, grepl("Auto|auto",rhs)) 
+
+df <- dplyr::filter(df, grepl('Pfact|odd|cnd|hyp|inat|mfq|anx',lhs)) 
+
+plot1Names <- c('Pfact', 'odd', 'cnd', 'hyp', 'inat', 'mfq',  'anx'  )
+
+df <- df[df$lhs %in% plot1Names,]
+
+df$pvalue <- with(df,ifelse(pvalue == 0, 2*pnorm(-abs(est/se)), pvalue))  #recalculate pvalue if  exactly p = 0
+
+# BEnjamini Hochberg correction
+df$pvalAdj <- p.adjust(df$pvalue, method = 'BH', n = length(df$pvalue)) 
+
+#alpha
+predCorrection <- 0.05
+
+df$index2 <- ifelse(df$pvalAdj < predCorrection, '*', '' ) 
+
+df$index <- ifelse(df$pvalue < predCorrection, '*', '' )
+
+
+df$lhs <- factor(df$lhs , levels = c('Pfact', 'odd', 'cnd', 'hyp', 'inat', 'mfq',  'anx'  ))
+
+levels(df$lhs) <- c('P', 'ODD', 'CND', 'HYP', 'INAT', 'MFQ',  'ANX')
+ 
+df$PRS <- as.factor(df$PRS)
+
+levels(df$PRS) <- c('ADHD', 'AN', 'ANX', 'ASD', 'BIP', 'CPAIN','DEP',  'Hair Colour', 'Insomnia',  'Neuroticism', 'PC1', 'PC1 psych', 'PTSD', 'SCZ')
+
+df$PRS <- factor(df$PRS , levels = c('PC1','PC1 psych','ADHD', 'AN', 'ANX', 'ASD', 'BIP', 'DEP','PTSD', 'SCZ', 'Insomnia',  'Neuroticism', 'CPAIN','Hair Colour'  ))
+
+#add correction for multiple testing for two separate hypothesis: direct vs indirect effects
+
+df$id <- seq(dim(df)[1])
+
+#exclude PGS for which nUll model was favoured
+dfred <-  df %>% filter(
+                      PRS != c("Hair Colour")
+                      , PRS != c("SCZ")
+                      , PRS != c("Insomnia")
+                      , PRS != c("PTSD")
+                      , PRS != c("ANX")
+                      , PRS != c("AN")
+                      , PRS != c("BIP")
+                     )
+
+
+#p-value adjustment for direct effects
+cprs <- dfred %>% filter(type == "Child")
+cprs$cadj <- p.adjust(cprs$pvalue,method = "BH")
+cprs$indexc <- ifelse(cprs$cadj < .05, "*", "")
+ 
+#p-value adjustment for parental effects
+ pprs <- dfred %>% filter(type == "Mother" |  type == "Father")
+ pprs$mfadj <- p.adjust(pprs$pvalue,method = "BH")
+ pprs$indexp <- ifelse(pprs$mfadj < .05, "*", "")
+ 
+
+df2 <- plyr::join_all(list(pprs[,c("indexp","id")], cprs[,c("indexc","id")] , df) , by =c("id") , type = "full" )
+
+ #round estimates
+
+df2$pvalue <- formatC(df2$pvalue, format = "e", digits = 3)
+df2$est <- round(df2$est,4)
+df2$se <- round(df2$se,4)
+df2$std.all <- round(df2$std.all,4)
+ 
+ 
+ df2 <- df2[,c("lhs","PRS","type" ,"est","se","pvalue","std.all","index","index2","indexc","indexp")] 
+ 
+ names(df2) <- c("Outcome","PRS","Role" ,"Beta","SE","p-value","StdBeta","nominal","BH","direct test","indirect test")
+ 
+df2 <- df2[order(df2$PRS,df2$Outcome,df2$Role),]
+saveRDS(df2,"../output/summaryResultsPlots.rds")
+
+```
+
+```{r}
+sn <- "PRS Results" #sheet name
+
+addWorksheet(wb,sheetName = paste0(sn))
+
+writeData(wb, sheet = paste0(sn), x = paste("Table 6. PRS results - trio models") , startRow = 1, rowNames=T)
+
+writeDataTable(wb, sheet = paste0(sn), x = df2, colNames =T,rowNames=F,startRow = 2, headerStyle = hs1)
+
+saveWorkbook(wb,paste0('../output/tables/',wn,'.xlsx'), overwrite=T)
+
+#openXL(paste0('../output/tables/',wn,'.xlsx'))
+
+```
+
+# results by PGS child
+
+```{r}
+
+
+df <- readRDS('../output/listRes_child_30January2023.rds') 
+
+df$type <- rep(c('Child'), nrow(df))
+
+df$PRS <- gsub('r_UKB_|r_|_Child|_Mother|_Father','',df$rhs)
+
+df$PRS <- gsub('_ukbd1747_2_|_ieub102|_ieua1185|_ukbd1747_2|_ukbb5192|_ieua1183','',df$PRS)
+
+df <- dplyr::filter(df, grepl("Auto|auto",rhs)) 
+
+df <- dplyr::filter(df, grepl('Pfact|odd|cnd|hyp|inat|mfq|anx',lhs)) 
+
+plot1Names <- c('Pfact', 'odd', 'cnd', 'hyp', 'inat', 'mfq',  'anx'  )
+
+df <- df[df$lhs %in% plot1Names,]
+
+df$pvalue <- with(df,ifelse(pvalue == 0, 2*pnorm(-abs(est/se)), pvalue))  #recalculate pvalue if exactly p = 0
+
+#Benjamini Hochberg correction
+df$pvalAdj <- p.adjust(df$pvalue, method = 'BH', n = length(df$pvalue)) 
+
+#Alpha
+predCorrection <- 0.05
+
+df$index2 <- ifelse(df$pvalAdj < predCorrection, '*', '' ) 
+
+df$index <- ifelse(df$pvalue < predCorrection, '*', '' )
+
+
+df$lhs <- factor(df$lhs , levels = c('Pfact', 'odd', 'cnd', 'hyp', 'inat', 'mfq',  'anx'  ))
+
+levels(df$lhs) <- c('P', 'ODD', 'CND', 'HYP', 'INAT', 'MFQ',  'ANX')
+ 
+df$PRS <- as.factor(df$PRS)
+
+levels(df$PRS) <- c('ADHD', 'AN', 'ANX', 'ASD', 'BIP', 'CPAIN','DEP',  'Hair Colour', 'Insomnia',  'Neuroticism', 'PC1', 'PC1 psych', 'PTSD', 'SCZ')
+
+df$PRS <- factor(df$PRS , levels = c('PC1','PC1 psych','ADHD', 'AN', 'ANX', 'ASD', 'BIP', 'DEP','PTSD', 'SCZ', 'Insomnia',  'Neuroticism', 'CPAIN','Hair Colour'  ))
+
+df$id <- seq(dim(df)[1])
+
+#round estimates
+df$pvalue <- formatC(df$pvalue, format = "e", digits = 3)
+df$est <- round(df$est,4)
+df$se <- round(df$se,4)
+
+df$std.all <- round(df$std.all,4)
+
+df2 <- df[,c("lhs","PRS","type" ,"est","se","pvalue","std.all","index","index2")]
+ 
+names(df2) <- c("Outcome","PRS","Role","Beta","SE","p-value","stdBeta","nominal","BH")
+ 
+df2 <- df2[order(df2$PRS,df2$Outcome,df2$Role),]
+saveRDS(df2,"../output/summaryResultsPlots_Child.rds")
+
+```
+
+
+```{r}
+sn <- "PGS Results Child" #sheet name
+
+addWorksheet(wb,sheetName = paste0(sn))
+
+writeData(wb, sheet = paste0(sn), x = paste("Table 7. PGS results - Child") , startRow = 1, rowNames=T)
+
+writeDataTable(wb, sheet = paste0(sn), x = df2, colNames =T,rowNames=F,startRow = 2, headerStyle = hs1)
+
+saveWorkbook(wb,paste0('../output/tables/',wn,'.xlsx'), overwrite=T)
+
+openXL(paste0('../output/tables/',wn,'.xlsx'))
+
+```
+
+
+# results by PGS parents
+
+```{r}
+
+df <- readRDS('../output/listRes_parents_02February2023.rds')
+
+df$type <- rep(c('Mother','Father'), nrow(df)/2)
+
+df$PRS <- gsub('r_UKB_|r_|_Child|_Mother|_Father','',df$rhs)
+
+df$PRS <- gsub('_ukbd1747_2_|_ieub102|_ieua1185|_ukbd1747_2|_ukbb5192|_ieua1183','',df$PRS)
+
+df <- dplyr::filter(df, grepl("Auto|auto",rhs)) 
+
+df <- dplyr::filter(df, grepl('Pfact|odd|cnd|hyp|inat|mfq|anx',lhs)) 
+
+plot1Names <- c('Pfact', 'odd', 'cnd', 'hyp', 'inat', 'mfq',  'anx'  )
+
+df <- df[df$lhs %in% plot1Names,]
+
+df$pvalue <- with(df,ifelse(pvalue == 0, 2*pnorm(-abs(est/se)), pvalue))  #recalculate pvalue if exactly p = 0
+
+#Benjamini Hochberg correction
+df$pvalAdj <- p.adjust(df$pvalue, method = 'BH', n = length(df$pvalue)) 
+
+#Alpha
+predCorrection <- 0.05
+
+df$index2 <- ifelse(df$pvalAdj < predCorrection, '*', '' ) 
+
+df$index <- ifelse(df$pvalue < predCorrection, '*', '' )
+
+
+df$lhs <- factor(df$lhs , levels = c('Pfact', 'odd', 'cnd', 'hyp', 'inat', 'mfq',  'anx'  ))
+
+levels(df$lhs) <- c('P', 'ODD', 'CND', 'HYP', 'INAT', 'MFQ',  'ANX')
+ 
+df$PRS <- as.factor(df$PRS)
+
+levels(df$PRS) <- c('ADHD', 'AN', 'ANX', 'ASD', 'BIP', 'CPAIN','DEP',  'Hair Colour', 'Insomnia',  'Neuroticism', 'PC1', 'PC1 psych', 'PTSD', 'SCZ')
+
+df$PRS <- factor(df$PRS , levels = c('PC1','PC1 psych','ADHD', 'AN', 'ANX', 'ASD', 'BIP', 'DEP','PTSD', 'SCZ', 'Insomnia',  'Neuroticism', 'CPAIN','Hair Colour'  ))
+
+
+df$id <- seq(dim(df)[1])
+
+#round estimates
+df$pvalue <- formatC(df$pvalue, format = "e", digits = 3)
+df$est <- round(df$est,4)
+df$se <- round(df$se,4)
+
+df$std.all <- round(df$std.all,4)
+ 
+ df2 <- df[,c("lhs","PRS","type" ,"est","se","pvalue","std.all","index","index2")] 
+ names(df2) <- c("Outcome","PRS","Role","Beta","SE","p-value","stdBeta","nominal","BH")
+ 
+
+df2 <- df2[order(df2$PRS,df2$Outcome,df2$Role),]
+saveRDS(df2,"../output/summaryResultsPlots_Parents.rds")
+
+```
+
+
+```{r}
+sn <- "PGS Results Parents" #sheet name
+
+addWorksheet(wb,sheetName = paste0(sn))
+
+writeData(wb, sheet = paste0(sn), x = paste("Table 8. PGS results - Parents") , startRow = 1, rowNames=T)
+
+writeDataTable(wb, sheet = paste0(sn), x = df2, colNames =T,rowNames=F,startRow = 2, headerStyle = hs1)
+
+saveWorkbook(wb,paste0('../output/tables/',wn,'.xlsx'), overwrite=T)
+
+openXL(paste0('../ouput/tables/',wn,'.xlsx'))
+
+```
+
+# heterogeneity ADHD 
+
+```{r}
+
+df <- readRDS('../output/listRes_het_trio_02February2023.rds')
+
+df$type <- rep(c('Child','Mother','Father'), nrow(df)/3)
+
+df$PRS <- gsub('r_UKB_|r_|_Child|_Mother|_Father','',df$rhs)
+
+df$PRS <- gsub('_ukbd1747_2_|_ieub102|_ieua1185|_ukbd1747_2|_ukbb5192|_ieua1183','',df$PRS)
+
+df <- dplyr::filter(df, grepl("Auto|auto",rhs)) 
+
+df <- dplyr::filter(df, grepl("ADHD",rhs)) 
+
+df <- dplyr::filter(df, !grepl('Pfact|odd$|hyp$|inat$|mfq$|anx$',lhs)) 
+
+df <- dplyr::filter(df, grepl('odd|hyp|inat',lhs))
+
+df$pvalue <- with(df,ifelse(pvalue == 0, 2*pnorm(-abs(est/se)), pvalue))  #recalculate pvalue if exactly p = 0
+
+df$pvalAdj <- p.adjust(df$pvalue, method = 'BH', n = length(df$pvalue)) 
+
+predCorrection <- 0.05
+
+df$index2 <- ifelse(df$pvalAdj < predCorrection, '*', '' ) 
+
+df$index <- ifelse(df$pvalue < predCorrection, '*', '' )
+
+df$fctr <- c(rep("odd",24), rep("hyp",27),rep("inat",27))
+
+df$fctr <- factor(df$fctr , levels = c( 'odd','hyp', 'inat' ))
+
+levels(df$fctr) <- c('ODD', 'HYP', 'INAT')
+ 
+df2 <- df
+ 
+#round estimates
+df2$pvalue <- formatC(df2$pvalue, format = "e", digits = 3)
+df2$est <- round(df2$est,4)
+df2$se <- round(df2$se,4)
+ 
+ 
+df2 <- df2[,c("lhs","PRS","type" ,"est","se","pvalue","index","index2","fctr")] 
+ 
+ names(df2) <- c("Outcome","PRS","Role","Beta","SE","p-value","nominal","BH","factor")
+ 
+df2 <- df2[order(df2$PRS,df2$Outcome,df2$Role),]
+saveRDS(df2,"../output/summaryResultsPlots.ADHD.items.rds")
+
+```
+
+# heterogeneity CPAIN 
+
+```{r}
+
+df <- readRDS('../output/pairwise/listRes_het_all_02February2023.rds')
+
+df$type <- rep(c('Child','Mother','Father'), nrow(df)/3)
+
+df$PRS <- gsub('r_UKB_|r_|_Child|_Mother|_Father','',df$rhs)
+
+df$PRS <- gsub('_ukbd1747_2_|_ieub102|_ieua1185|_ukbd1747_2|_ukbb5192|_ieua1183','',df$PRS)
+
+df <- dplyr::filter(df, grepl("Auto|auto",rhs)) 
+
+df <- dplyr::filter(df, grepl("ChronicPain",rhs)) 
+
+df <- dplyr::filter(df, !grepl('Pfact|odd$|hyp$|inat$|mfq$|anx$',lhs)) 
+
+df <- dplyr::filter(df, grepl('odd|hyp|inat',lhs))
+
+
+
+df$pvalue <- with(df,ifelse(pvalue == 0, 2*pnorm(-abs(est/se)), pvalue))  #recalculate pvalue if  exactlyp = 0
+
+df$pvalAdj <- p.adjust(df$pvalue, method = 'BH', n = length(df$pvalue)) 
+
+predCorrection <- 0.05
+
+df$index2 <- ifelse(df$pvalAdj < predCorrection, '*', '' ) 
+
+df$index <- ifelse(df$pvalue < predCorrection, '*', '' )
+
+df$fctr <- c(rep("odd",24), rep("hyp",27),rep("inat",27))
+
+df$fctr <- factor(df$fctr , levels = c( 'odd','hyp', 'inat' ))
+
+levels(df$fctr) <- c('ODD',  'HYP', 'INAT')
+ 
+df2 <- df
+ 
+#round estimates
+
+df2$pvalue <- formatC(df2$pvalue, format = "e", digits = 3)
+df2$est <- round(df2$est,4)
+df2$se <- round(df2$se,4)
+ 
+ 
+ df2 <- df2[,c("lhs","PRS","type" ,"est","se","pvalue","index","index2","fctr")]
+ 
+ names(df2) <- c("Outcome","PRS","Role","Beta","SE","p-value","nominal","BH","factor")
+ 
+df2 <- df2[order(df2$PRS,df2$Outcome,df2$Role),]
+saveRDS(df2,"../output/summaryResultsPlots.CPAIN.items.rds")
+
+```
+
+```{r}
+sn <- "PRS Results items" #sheet name
+
+addWorksheet(wb,sheetName = paste0(sn))
+
+writeData(wb, sheet = paste0(sn), x = paste("Table X. PRS results - ADHD items trio models") , startRow = 1, rowNames=T)
+
+writeDataTable(wb, sheet = paste0(sn), x = df2, colNames =T,rowNames=F,startRow = 2, headerStyle = hs1)
+
+saveWorkbook(wb,paste0('../output/tables/',wn,'.xlsx'), overwrite=T)
+
+#openXL(paste0('../../tables/',wn,'.xlsx'))
+
+```
+
