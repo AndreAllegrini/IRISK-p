@@ -212,23 +212,6 @@ mfq68+mfq69+mfq70+mfq71+mfq72+mfq73+mfq74+mfq75+mfq76+mfq77+mfq78+mfq79+mfq80+an
 
 ")
 
-# SYMPTOM INDICATORS 
-
-Items <-   paste0("
-# measurement model
-mfq =~ mfq68+mfq69+mfq70+mfq71+mfq72+mfq73+mfq74+mfq75+mfq76+mfq77+mfq78+mfq79+mfq80
-anx =~ anx145+anx146+anx147+anx148+anx149
-cnd =~ cnd111+cnd112+cnd113+cnd114+cnd115+cnd116+cnd117+cnd118
-odd =~ odd137+odd138+odd139+odd140+odd141+odd142+odd143+odd144
-hyp =~ hyp128+hyp129+hyp130+hyp131+hyp132+hyp133+hyp134+hyp135+hyp136
-inat =~ inat119+inat120+inat121+inat122+inat123+inat124+inat125+inat126+inat127
-
-Pfact =~ mfq + anx + cnd + odd + hyp + inat
-
-
-mfq68+mfq69+mfq70+mfq71+mfq72+mfq73+mfq74+mfq75+mfq76+mfq77+mfq78+mfq79+mfq80+anx145+anx146+anx147+anx148+anx149+cnd111+cnd112+cnd113+cnd114+cnd115+cnd116+cnd117+cnd118+odd137+odd138+odd139+odd140+odd141+odd142+odd143+odd144+hyp128+hyp129+hyp130+hyp131+hyp132+hyp133+hyp134+hyp135+hyp136+inat119+inat120+inat121+inat122+inat123+inat124+inat125+inat126+inat127 ~ SEX + YOB + ",PRSname,"_Child + ",PRSname,"_Mother + ",PRSname,"_Father
-
-")
 
 #list of models
 
@@ -240,8 +223,7 @@ lsmodels <- list(null00 = null00,
                  Spec_c = Spec_c, 
                  Spec_d = Spec_d, 
                  Spec_e = Spec_e, 
-                 Spec_f = Spec_f, 
-                 Items = Items)
+                 Spec_f = Spec_f)
 
 
 

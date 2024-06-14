@@ -2,6 +2,14 @@
 
 args <- commandArgs(trailingOnly = TRUE)
 
+################ (range of) child/mother/father effect sizes in trio model
+
+child_b = c(sqrt(.002))
+mother_b = c(sqrt(.001))
+father_b = c(sqrt(.0001),sqrt(0.0005),sqrt(.001))
+
+###############
+
 if (length(args) == 0) {
   # Defaults
   sample_size <- 15000
@@ -45,12 +53,6 @@ library(foreach)
 library(parallel)
 library(doParallel)
 library(glue)
-
-################ (range of) child/mother/father effect sizes in trio (conditional) model
-
-child_b = c(sqrt(.002))
-mother_b = c(sqrt(.001))
-father_b = c(sqrt(.0001),sqrt(0.0005),sqrt(.001))
 
 #####################  Population models
 

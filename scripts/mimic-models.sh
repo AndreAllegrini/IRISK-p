@@ -4,7 +4,7 @@
 #SBATCH --time=8:00:00
 #SBATCH --nodes=1
 #SBATCH --array=1-14 #number of PGS in list
-#SBATCH --mem-per-cpu=4GB
+#SBATCH --mem-per-cpu=38GB
 
 ## Set up job environment:
 source /cluster/bin/jobsetup
