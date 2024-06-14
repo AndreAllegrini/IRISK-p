@@ -137,7 +137,7 @@ stubAuto <- '.gz_pred_auto.txt'
 
 
 # List of PRS names
-PRSnames <- c('ADHD_Demontis_ieua1183','anorexia_PGC2019','Anxiety_Purves2019_TotAnx_effect','Autism_Grove_ieua1185', 'Bipolar_PGC2021','DEP_Howard2019_ieub102','PTSD_PGC019_EUR','SCZ_PGC2022_EUR_GWAS', 'UKB_HairColourRed_ukbd1747_2', 'neuroSum_Nagel2018', 'insomnia_Watanabe_2022','ChronicPain_Johnston_2019')
+PRSnames <- c('ADHD_Demontis_ieua1183','anorexia_PGC2019','Anxiety_Purves2019_TotAnx_effect','Autism_Grove_ieua1185', 'Bipolar_PGC2021','DEP_Howard2019_ieub102','PTSD_PGC019_EUR','SCZ_PGC2022_EUR_GWAS','1747_2_logistic.EUR.sumstats', 'neuroSum_Nagel2018', 'insomnia_Watanabe_2022','ChronicPain_Johnston_2019')
 
 # Function to retrieve PRS
 getPRS <- function(smstDir, PRSnames, stub){
@@ -480,7 +480,7 @@ r2pca
 
 # Save list polygenic scores
 
-PRSnames <- c('PSCYH_LdAuto','PSYCH_LdAutoRed','r_ADHD_Demontis_ieua1183_auto','r_anorexia_PGC2019_auto','r_Anxiety_Purves2019_TotAnx_effect_auto','r_Autism_Grove_ieua1185_auto', 'r_Bipolar_PGC2021_auto','r_DEP_Howard2019_ieub102_auto','r_PTSD_PGC019_EUR_auto','r_SCZ_PGC2022_EUR_GWAS_auto', 'r_UKB_HairColourRed_ukbd1747_2_auto', 'r_neuroSum_Nagel2018_auto', 'r_insomnia_Watanabe_2022_auto','r_ChronicPain_Johnston_2019_auto')
+PRSnames <- c('PSCYH_LdAuto','PSYCH_LdAutoRed','r_ADHD_Demontis_ieua1183_auto','r_anorexia_PGC2019_auto','r_Anxiety_Purves2019_TotAnx_effect_auto','r_Autism_Grove_ieua1185_auto', 'r_Bipolar_PGC2021_auto','r_DEP_Howard2019_ieub102_auto','r_PTSD_PGC019_EUR_auto','r_SCZ_PGC2022_EUR_GWAS_auto', '1747_2_logistic.EUR.sumstats_auto', 'r_neuroSum_Nagel2018_auto', 'r_insomnia_Watanabe_2022_auto','r_ChronicPain_Johnston_2019_auto')
 
 write.table(PRSnames,"listPGS",col.names=F, row.names=F, quote=F)
 
