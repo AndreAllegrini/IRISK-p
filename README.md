@@ -1,8 +1,4 @@
-Code for: Allegrini, A., Hannigan, L.J., Frach, L., Barkhuizen, W.,
-Baldwin, J., Andreassen, O.A., Bragantini, D., Hegemann, L., Havdahl, A. and
-Pingault, J.B., 2023. *Intergenerational transmission of polygenic
-predisposition for neuropsychiatric traits on emotional and behavioural
-difficulties in childhood.* PsyArXiv
+Code for: Allegrini, A., Hannigan, L.J., Frach, L., Barkhuizen, W., Baldwin, J., Andreassen, O.A., Bragantini, D., Hegemann, L., Havdahl, A. and Pingault, J.B., 2023. *Intergenerational transmission of polygenic predisposition for neuropsychiatric traits on emotional and behavioural difficulties in childhood.* PsyArXiv
 
 Preprint: <https://osf.io/preprints/psyarxiv/w4psd>
 
@@ -38,8 +34,6 @@ Preprint: <https://osf.io/preprints/psyarxiv/w4psd>
 
     -   run as batch job: `power-sims.sh`
 
-    -   note: (range of) child/mother/father effect sizes in trio (conditional) model can be manually changed at line 50.
-
     -   usage: `Rscript --vanilla power-sims.r sample_size iterations cores_cl SEED`
 
         -   *sample_size* = analyses N, number of trios. `Default = 15000`
@@ -52,6 +46,6 @@ Preprint: <https://osf.io/preprints/psyarxiv/w4psd>
 
 -   `figures.Rmd`
 
-    -   code for main manuscirpt figures (analyses results)
+    -   code for manuscript figures
 
-    -   summary-level data to reproduce figures in `output/` directory
+    -   summary-level data to reproduce figures in `output/`
